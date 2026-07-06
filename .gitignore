@@ -1,0 +1,27 @@
+# Air build directory
+/tmp/
+
+# Sensitive environment variables
+.env
+.env.local
+
+# OS specific files
+.DS_Store
+
+# Compiled Go binaries (adjust names if needed)
+/main
+/shift-be
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# IDE/Editor configurations
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
