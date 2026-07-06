@@ -72,6 +72,8 @@ func getErrorMsg(fe validator.FieldError) string {
 		return "Must be at least " + fe.Param() + " characters"
 	case "max":
 		return "Must be at most " + fe.Param() + " characters"
+	case "eqfield":
+		return "Must match the password field"
 	}
 	return "Field validation failed on '" + fe.Tag() + "' tag"
 }

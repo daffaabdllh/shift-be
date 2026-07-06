@@ -13,6 +13,7 @@ func RegisterRouter(r *gin.RouterGroup, psql sq.StatementBuilderType) {
 	h := NewAuthHandler(psql)
 
 	// 2. Hubungkan ke method h.Login (menggunakan pointer h)
+	r.POST("/auth/register", middleware.IsNotLoggedIn(), h.Register)
 	r.POST("/auth/login", middleware.IsNotLoggedIn(), h.Login)
 	r.GET("/auth/userinfo", middleware.IsLoggedIn(), h.Userinfo)
 	r.DELETE("/auth/logout", middleware.IsLoggedIn(), h.Logout)

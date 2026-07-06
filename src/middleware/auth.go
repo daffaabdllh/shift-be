@@ -36,15 +36,10 @@ func IsLoggedIn() gin.HandlerFunc {
 func IsNotLoggedIn() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 1. Ambil access_token dari Cookie
-		cookie, err := c.Cookie("access_token")
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: Access token missing"})
-			c.Abort() // Menghentikan request agar tidak lanjut ke handler
-			return
-		}
+		cookie, _ := c.Cookie("access_token")
 
 		// 2. Validasi access_token menggunakan helper ParseToken
-		_, err = lib.ParseToken(cookie, "access")
+		_, err := lib.ParseToken(cookie, "access")
 		if err == nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Bad request: Access token still exists"})
 			c.Abort()

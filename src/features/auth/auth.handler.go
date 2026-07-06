@@ -1,12 +1,16 @@
 package auth
 
 import (
+	"errors"
+	"log"
 	"net/http"
 	"net/mail"
 	"shift-be/src/lib"
+	"strings"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type AuthHandler struct {
@@ -15,6 +19,61 @@ type AuthHandler struct {
 
 func NewAuthHandler(psql sq.StatementBuilderType) *AuthHandler {
 	return &AuthHandler{psql: psql}
+}
+
+func (h *AuthHandler) Register(c *gin.Context) {
+	var req RegisterSchema
+
+	if err := c.ShouldBindBodyWithJSON(&req); err != nil {
+		status, formattedErr := lib.FormatValidationError(err)
+		c.JSON(status, formattedErr)
+		return
+	}
+
+	hashPassword, _ := lib.HashPassword(req.Password)
+
+	var user User
+	err := h.
+		psql.
+		Insert("users").
+		Columns("fullname", "username", "email", "password").
+		Values(req.Fullname, req.Username, req.Email, hashPassword).
+		Suffix("RETURNING id, fullname, username, email").
+		QueryRow().
+		Scan(&user.ID, &user.Fullname, &user.Username, &user.Email)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == "23505" {
+				if strings.Contains(pgErr.ConstraintName, "username") {
+					c.JSON(http.StatusConflict, gin.H{
+						"status":  "error",
+						"message": "Username is already taken.",
+					})
+					return
+				}
+				if strings.Contains(pgErr.ConstraintName, "email") {
+					c.JSON(http.StatusConflict, gin.H{
+						"status":  "error",
+						"message": "Email is already registered.",
+					})
+					return
+				}
+			}
+		}
+		// 2. Fallback untuk error database lainnya (gunakan log biasa, hindari Panic agar server tidak crash)
+		log.Println("Database Error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Internal server error, failed to register new user.",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Register success",
+		"data":    user,
+	})
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
